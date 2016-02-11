@@ -14,6 +14,9 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.client.api.Request;
 
 public class HttpClientBenchMark {
 
@@ -39,23 +42,72 @@ public class HttpClientBenchMark {
 		//Collect failure error
 		List<String> failuresList = new ArrayList<>();
 		HttpClient client = new HttpClient();
-		//Below settings From stackoverflow anwer. Why jetty is slow ? Specially for load tests
+		//Below settings From stackoverflow answer. Why jetty is slow ? Specially for load tests
 		//client.setMaxConnectionsPerDestination(32768);
 		client.setMaxConnectionsPerDestination(6);
 		client.setMaxRequestsQueuedPerDestination(1024 * 1024);
+		//ADD HEADERS
+		String user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/48.0.2564.82 Chrome/48.0.2564.82 Safari/537.36";
+		client.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, user_agent));
 		client.start();
 
 		//AtomicBoolean counted=new AtomicBoolean(false);
 		final AtomicInteger success_status_count = new AtomicInteger(0);
 		final CountDownLatch latch = new CountDownLatch(urlsListSize);
+		
+		//ADD HEADERS
+		String accept, accept_encoding, accept_language, cache_control,connection,host, pragma,referrer;
+		accept = "*/*";
+		accept_encoding= "gzip, deflate, sdch";
+		accept_language= "en-GB,en-US;q=0.8,en;q=0.6";
+		cache_control = "no-cache";
+		connection = "keep-alive";
+		host="localhost:9090";
+		pragma = "no-cache";
+		referrer = "";
 
 		long start =  System.currentTimeMillis();
 
 		for(int i=0 ; i<urlsListSize ; i++ )
 		{
 			//Lets do asynchronous requests
+			String extension = urlsList.get(i).substring(urlsList.get(i).indexOf('.')+1);
+
+			if(extension.equalsIgnoreCase("html"))
+			{
+				accept = "Accept:text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8";
+			}
+			else if(extension.equalsIgnoreCase("js"))
+			{
+				accept = "*/*";
+				referrer="http://localhost:9090/my-gallery/index.html"; 
+			}
+			else if(extension.equalsIgnoreCase("css"))
+			{
+				accept = "text/css,*/*;q=0.1";
+				referrer="http://localhost:9090/my-gallery/index.html"; 
+			}
+			else if(extension.equalsIgnoreCase("JSON"))
+			{
+				accept = "application/json";
+				referrer="http://localhost:9090/my-gallery/index.html"; 
+			}
+			else if(extension.equalsIgnoreCase("gif")||extension.equalsIgnoreCase("jpg")||extension.equalsIgnoreCase("png"))
+			{
+				accept = "image/webp,image/*,*/*;q=0.8";
+				referrer="http://localhost:9090/my-gallery/index.html"; 
+			} 
+				Request req_with_headers = client.newRequest(urlsList.get(i)).header(HttpHeader.ACCEPT, accept);
+				req_with_headers.header(HttpHeader.ACCEPT_ENCODING, accept_encoding);
+				req_with_headers.header(HttpHeader.ACCEPT_LANGUAGE, accept_language);
+				req_with_headers.header(HttpHeader.CACHE_CONTROL, cache_control);
+				req_with_headers.header(HttpHeader.CONNECTION, connection);
+				req_with_headers.header(HttpHeader.HOST,host);
+				req_with_headers.header(HttpHeader.PRAGMA, pragma);
+				req_with_headers.header(HttpHeader.REFERER, referrer);
+			//Lets do asynchronous requests
 			AtomicBoolean counted=new AtomicBoolean(false);
-			client.newRequest(urlsList.get(i))
+			req_with_headers
 			.send(new Response.CompleteListener()
 			{
 				@Override
