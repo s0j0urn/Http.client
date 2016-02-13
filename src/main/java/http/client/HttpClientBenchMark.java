@@ -38,7 +38,8 @@ public class HttpClientBenchMark {
 			e.printStackTrace();
 		}
 
-
+		String host =  urlsList.get(0).substring(7, urlsList.get(0).indexOf(':', 7));
+		int port =  Integer.parseInt(urlsList.get(0).substring(urlsList.get(0).indexOf(':', 7)+1, urlsList.get(0).indexOf('/', 7)));
 		//Collect failure error
 		List<String> failuresList = new ArrayList<>();
 		HttpClient client = new HttpClient();
@@ -56,55 +57,78 @@ public class HttpClientBenchMark {
 		final CountDownLatch latch = new CountDownLatch(urlsListSize);
 		
 		//ADD HEADERS
-		String accept, accept_encoding, accept_language, cache_control,connection,host, pragma,referrer;
-		accept = "*/*";
-		accept_encoding= "gzip, deflate, sdch";
-		accept_language= "en-GB,en-US;q=0.8,en;q=0.6";
-		cache_control = "no-cache";
-		connection = "keep-alive";
-		host="localhost:9090";
-		pragma = "no-cache";
-		referrer = "";
+		//String accept, accept_language, cache_control,connection,host, pragma,referrer;
+		//accept = "*/*";
+		//accept_encoding= "gzip, deflate, sdch";
+		//accept_language= "en-GB,en-US;q=0.8,en;q=0.6";
+		//cache_control = "no-cache";
+		//connection = "keep-alive";
+		//host="localhost:9090";
+		//pragma = "no-cache";
+		//referrer = "";
 
 		long start =  System.currentTimeMillis();
 
 		for(int i=0 ; i<urlsListSize ; i++ )
 		{
-			//Lets do asynchronous requests
+			//Lets set the headers for the requests
+			Request req_with_headers = client.newRequest(urlsList.get(i));
+			//req_with_headers.header(HttpHeader.ACCEPT_ENCODING, "gzip").header(HttpHeader.ACCEPT_ENCODING, "deflate").header(HttpHeader.ACCEPT_ENCODING,"sdch");
+			req_with_headers.header("Accept-Encoding", "gzip, deflate, sdch");
+			//req_with_headers.header(HttpHeader.ACCEPT_LANGUAGE, "en-GB").header(HttpHeader.ACCEPT_LANGUAGE, "en-US;q=0.8").header(HttpHeader.ACCEPT_LANGUAGE, "en;q=0.6");
+			req_with_headers.header("Accept-Language","en-US,en;q=0.8");
+			req_with_headers.header(HttpHeader.CACHE_CONTROL, "no_cache");
+			req_with_headers.header(HttpHeader.CONNECTION, "keep-alive");
+			req_with_headers.header(HttpHeader.HOST,host+":"+String.valueOf(port));
+			req_with_headers.header(HttpHeader.PRAGMA, "no-cache");
+			//req_with_headers.header(HttpHeader.REFERER, referrer);
 			String extension = urlsList.get(i).substring(urlsList.get(i).indexOf('.')+1);
 
 			if(extension.equalsIgnoreCase("html"))
 			{
-				accept = "Accept:text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8";
+				//accept = "Accept:text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8";
+				//req_with_headers.header(HttpHeader.ACCEPT, "text/html").header(HttpHeader.ACCEPT, "application/xhtml+xml").header(HttpHeader.ACCEPT, "application/xml;q=0.9").header(HttpHeader.ACCEPT,"image/webp").header(HttpHeader.ACCEPT, "*/*;q=0.8");
+				req_with_headers.header("Accept","text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
 			}
 			else if(extension.equalsIgnoreCase("js"))
 			{
-				accept = "*/*";
-				referrer="http://localhost:9090/my-gallery/index.html"; 
+				//accept = "*/*";
+				//req_with_headers.header(HttpHeader.ACCEPT, "*/*");
+				req_with_headers.header("Accept", "*/*");
+				//referrer="http://localhost:9090/my-gallery/index.html";
+				req_with_headers.header(HttpHeader.REFERER, "http://localhost:9090/my-gallery/index.html");
 			}
 			else if(extension.equalsIgnoreCase("css"))
 			{
-				accept = "text/css,*/*;q=0.1";
-				referrer="http://localhost:9090/my-gallery/index.html"; 
+				//accept = "text/css,*/*;q=0.1";
+				//req_with_headers.header(HttpHeader.ACCEPT, "text/css").header(HttpHeader.ACCEPT, "*/*;q=0.1");
+				req_with_headers.header("Accept", "text/css, */*;q=0.1");
+				//referrer="http://localhost:9090/my-gallery/index.html";
+				req_with_headers.header(HttpHeader.REFERER, "http://localhost:9090/my-gallery/index.html");
 			}
 			else if(extension.equalsIgnoreCase("JSON"))
 			{
-				accept = "application/json";
-				referrer="http://localhost:9090/my-gallery/index.html"; 
+				//accept = "application/json";
+				req_with_headers.header(HttpHeader.ACCEPT, "application/json");
+				//referrer="http://localhost:9090/my-gallery/index.html";
+				req_with_headers.header(HttpHeader.REFERER, "http://localhost:9090/my-gallery/index.html");
 			}
 			else if(extension.equalsIgnoreCase("gif")||extension.equalsIgnoreCase("jpg")||extension.equalsIgnoreCase("png"))
 			{
-				accept = "image/webp,image/*,*/*;q=0.8";
-				referrer="http://localhost:9090/my-gallery/index.html"; 
+				//accept = "image/webp,image/*,*/*;q=0.8";
+				//req_with_headers.header(HttpHeader.ACCEPT, "image/webp").header(HttpHeader.ACCEPT,"image/*").header(HttpHeader.ACCEPT, "*/*;q=0.8");
+				req_with_headers.header("Accept", "image/webp,image/*,*/*;q=0.8");
+				//referrer="http://localhost:9090/my-gallery/index.html"; 
+				req_with_headers.header(HttpHeader.REFERER, "http://localhost:9090/my-gallery/index.html");
 			} 
-				Request req_with_headers = client.newRequest(urlsList.get(i)).header(HttpHeader.ACCEPT, accept);
-				req_with_headers.header(HttpHeader.ACCEPT_ENCODING, accept_encoding);
-				req_with_headers.header(HttpHeader.ACCEPT_LANGUAGE, accept_language);
-				req_with_headers.header(HttpHeader.CACHE_CONTROL, cache_control);
-				req_with_headers.header(HttpHeader.CONNECTION, connection);
-				req_with_headers.header(HttpHeader.HOST,host);
-				req_with_headers.header(HttpHeader.PRAGMA, pragma);
-				req_with_headers.header(HttpHeader.REFERER, referrer);
+				/*Request req_with_headers = client.newRequest(urlsList.get(i)).header(HttpHeader.ACCEPT, accept);
+				req_with_headers.header(HttpHeader.ACCEPT_ENCODING, "gzip").header(HttpHeader.ACCEPT_ENCODING, "deflate").header(HttpHeader.ACCEPT_ENCODING,"sdch");
+				req_with_headers.header(HttpHeader.ACCEPT_LANGUAGE, "en-GB").header(HttpHeader.ACCEPT_LANGUAGE, "en-US;q=0.8").header(HttpHeader.ACCEPT_LANGUAGE, "en;q=0.6");
+				req_with_headers.header(HttpHeader.CACHE_CONTROL, "no_cache");
+				req_with_headers.header(HttpHeader.CONNECTION, "keep-alive");
+				req_with_headers.header(HttpHeader.HOST,host+String.valueOf(port));
+				req_with_headers.header(HttpHeader.PRAGMA, "no-cache");
+				req_with_headers.header(HttpHeader.REFERER, referrer);*/
 			//Lets do asynchronous requests
 			AtomicBoolean counted=new AtomicBoolean(false);
 			req_with_headers
